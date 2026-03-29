@@ -16,6 +16,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly IGenerationClient _generationClient;
     private readonly IEmbeddingClient _embeddingClient;
     private readonly ISearchService _searchService;
+    private readonly IProductRepository _productRepository;
     private readonly ILogger<MainViewModel> _logger;
     private readonly Dispatcher _dispatcher;
     private CancellationTokenSource? _cts;
@@ -25,12 +26,14 @@ public partial class MainViewModel : ViewModelBase
         IGenerationClient generationClient,
         IEmbeddingClient embeddingClient,
         ISearchService searchService,
+        IProductRepository productRepository,
         ILogger<MainViewModel> logger)
     {
         _ragOrchestrator = ragOrchestrator;
         _generationClient = generationClient;
         _embeddingClient = embeddingClient;
         _searchService = searchService;
+        _productRepository = productRepository;
         _logger = logger;
         _dispatcher = Dispatcher.CurrentDispatcher;
 
@@ -39,6 +42,30 @@ public partial class MainViewModel : ViewModelBase
         SelectedCategory = Categories[0];
         SelectedColor = Colors[0];
         Sources = new ObservableCollection<SearchResult>();
+
+        _ = LoadFiltersAsync();
+    }
+
+    private async Task LoadFiltersAsync()
+    {
+        try
+        {
+            var categories = await _productRepository.GetDistinctCategoriesAsync();
+            var colors = await _productRepository.GetDistinctColorsAsync();
+
+            _dispatcher.Invoke(() =>
+            {
+                foreach (var c in categories) Categories.Add(c);
+                foreach (var c in colors) Colors.Add(c);
+            });
+
+            _logger.LogInformation("Loaded {Categories} categories and {Colors} colors",
+                categories.Count, colors.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load filter dropdowns — SQL Server may not be running");
+        }
     }
 
     [ObservableProperty]

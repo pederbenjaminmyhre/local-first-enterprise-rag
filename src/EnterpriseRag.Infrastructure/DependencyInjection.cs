@@ -36,6 +36,7 @@ public static class DependencyInjection
 
         // Register SQL Server services
         services.AddScoped<ISearchService, HybridSearchService>();
+        services.AddSingleton<IProductRepository, ProductRepository>();
 
         // Register RAG orchestrator
         services.AddScoped<IRagOrchestrator, RagOrchestrator>();
