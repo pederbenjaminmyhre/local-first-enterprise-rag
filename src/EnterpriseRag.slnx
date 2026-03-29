@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="../tests/EnterpriseRag.Tests.Integration/EnterpriseRag.Tests.Integration.csproj" />
+  <Project Path="../tests/EnterpriseRag.Tests.Unit/EnterpriseRag.Tests.Unit.csproj" />
+  <Project Path="EnterpriseRag.Core/EnterpriseRag.Core.csproj" />
+  <Project Path="EnterpriseRag.Desktop/EnterpriseRag.Desktop.csproj" />
+  <Project Path="EnterpriseRag.Infrastructure/EnterpriseRag.Infrastructure.csproj" />
+  <Project Path="EnterpriseRag.Ingestion/EnterpriseRag.Ingestion.csproj" />
+</Solution>

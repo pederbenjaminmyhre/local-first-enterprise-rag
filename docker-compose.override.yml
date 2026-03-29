@@ -1,0 +1,6 @@
+# Local development overrides
+# Usage: docker compose up -d (automatically merges this file)
+services:
+  sql-server:
+    environment:
+      SA_PASSWORD: "YourStrong!Pass2025"

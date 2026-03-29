@@ -1,0 +1,64 @@
+services:
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: rag-sql-server
+    hostname: sql-server
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:-YourStrong!Pass2025}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql-data:/var/opt/mssql
+      - ./infrastructure/scripts:/scripts
+      - ./sql:/sql
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${SA_PASSWORD:-YourStrong!Pass2025}" -C -Q "SELECT 1" -b -o /dev/null
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: rag-ollama
+    hostname: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          memory: 4G
+
+  nginx:
+    build:
+      context: ./infrastructure/docker/nginx
+    container_name: rag-nginx
+    hostname: nginx
+    ports:
+      - "8443:443"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -skf https://localhost:443/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  sql-data:
+  ollama-data:

@@ -1,0 +1,23 @@
+The core philosophy of this strategy is Hybrid Portability. You will develop the project "Local-First" to prove data sovereignty, but deploy it to a Unified Microsoft Stack (Azure + SQL 2025) to demonstrate enterprise scalability.
+
+1. Hosting Architecture
+We will use a "Single-Cloud, Multi-Tier" approach. By hosting on Microsoft Azure, you take advantage of the same T-SQL engine you use on-premises, minimizing the "learning tax."
+Component Hosting Matrix
+ComponentHosting ServiceWhy This Service?
+DatabaseAzure SQL Managed Instance (SQL 2025 Tier)Provides native VECTOR types and DiskANN indexing. Allows for 100% T-SQL compatibility with your local scripts.
+AI Model (Ollama)Azure Container Apps (ACA)Host Ollama in a GPU-enabled container. It provides a private, secure endpoint that only your app can talk to.
+Backend AppAzure App Service (.NET 9)Native support for your C# code. Integrated with Entra ID (Active Directory) for enterprise security.
+Security ProxyNginx (Sidecar Container)Acts as the required HTTPS bridge between SQL Server and the Ollama REST API.
+
+2. Deployment Strategy
+
+To maintain your "Learn by Building" workflow, we will use a Two-Phase Deployment pipeline.
+
+Phase A: Local-First Development (The "Sovereign" Proof)
+Host: Your high-spec laptop (using Docker Desktop).Goal: Prove the system works entirely "Air-Gapped" with no data leaving your machine.
+Action: Claude Code scaffolds the .NET 9 app and SQL 2025 local container.
+
+Phase B: Cloud-Native Staging (The "Enterprise" Proof)
+Host: Azure.
+Goal: Demonstrate the ability to scale to thousands of users.
+Action: Use GitHub Actions to automate the deployment. When you push code to your main branch, it automatically updates the Azure Web App and the Azure SQL schema.

@@ -1,0 +1,40 @@
+Technical Requirements & Architecture
+Project Title: Local-First Enterprise RAG (Retrieval-Augmented Generation)
+Target Environment: Windows 11/Server 2025, .NET 9, Docker Desktop
+Primary Objective: Build a production-ready, air-gapped RAG system using SQL Server 2025’s native vector capabilities and local LLM orchestration.
+
+1. The Tech Stack
+Database: SQL Server 2025 (Preview) with VECTOR data type support.
+
+LLM/Embedding Engine: Ollama (running llama3.2 for generation and mxbai-embed-large for embeddings).
+
+Orchestration: .NET 9 (C#) using Microsoft Semantic Kernel.
+
+API Gateway: Nginx (configured as a Reverse Proxy to provide the HTTPS endpoint SQL Server 2025 requires).
+
+Frontend: WPF (Desktop) to emphasize the "Local/On-Prem" nature of the tool.
+
+2. Core Architecture Components
+The Vector Store: Modify AdventureWorksDW2020.DimProduct. Add a VECTOR(1024) column named DescriptionVector.
+
+The Ingestion Pipeline: A C# service that iterates through EnglishDescription, calls the Ollama embedding API, and performs a bulk UPDATE to the SQL vector column.
+
+Hybrid Search Logic: A T-SQL Stored Procedure using the new VECTOR_DISTANCE function (Cosine Similarity) combined with a standard LIKE or CONTAINS filter for metadata (e.g., Category or Color).
+
+The RAG Loop: 1. User asks a question in WPF.
+2. App converts question to a vector via Ollama.
+3. App queries SQL Server for the Top 5 most relevant products using Hybrid Search.
+4. App sends the Product Data + User Question to Ollama for a natural language response.
+
+3. Implementation Instructions for Claude Code
+"Claude, help me scaffold a .NET 9 WPF application that connects to a SQL Server 2025 instance. We need a service layer that communicates with a local Ollama API.
+
+Specific Tasks:
+
+Write the T-SQL script to enable external REST endpoints and create a table with a VECTOR column.
+
+Create a C# 'EmbeddingClient' using HttpClient to talk to Ollama.
+
+Implement a 'SearchService' that executes a VECTOR_DISTANCE query.
+
+Build a basic WPF UI with a 'Search' box and a 'Results' markdown viewer."

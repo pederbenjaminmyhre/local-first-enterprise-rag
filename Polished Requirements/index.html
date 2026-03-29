@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Local-First Enterprise RAG &mdash; Project Requirements &amp; Strategy</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: #1e293b;
+      background: #f8fafc;
+      line-height: 1.7;
+    }
+
+    /* ── Layout ────────────────────────────────────────────── */
+    .page-wrapper { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar / TOC ─────────────────────────────────────── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 290px;
+      height: 100vh;
+      overflow-y: auto;
+      background: #0f172a;
+      color: #cbd5e1;
+      padding: 2rem 1.25rem;
+      z-index: 100;
+    }
+    .sidebar h2 {
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: #64748b;
+      margin-bottom: .75rem;
+    }
+    .sidebar .brand {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 1.75rem;
+      line-height: 1.35;
+    }
+    .sidebar nav a {
+      display: block;
+      color: #94a3b8;
+      text-decoration: none;
+      padding: .35rem 0 .35rem .75rem;
+      font-size: .875rem;
+      border-left: 2px solid transparent;
+      transition: all .15s;
+    }
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      color: #e2e8f0;
+      border-left-color: #38bdf8;
+    }
+    .sidebar nav a.sub {
+      padding-left: 1.5rem;
+      font-size: .8125rem;
+      color: #64748b;
+    }
+    .sidebar nav a.sub:hover { color: #94a3b8; }
+
+    /* ── Main Content ──────────────────────────────────────── */
+    .main {
+      margin-left: 290px;
+      max-width: 900px;
+      padding: 3rem 3.5rem 5rem;
+    }
+
+    /* ── Typography ────────────────────────────────────────── */
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: .25rem;
+    }
+    .subtitle {
+      font-size: 1.05rem;
+      color: #64748b;
+      margin-bottom: 2.5rem;
+    }
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 3rem;
+      margin-bottom: .75rem;
+      padding-bottom: .4rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 2rem;
+      margin-bottom: .5rem;
+    }
+    p { margin-bottom: 1rem; }
+    ul, ol { margin: .5rem 0 1.25rem 1.5rem; }
+    li { margin-bottom: .35rem; }
+    strong { color: #0f172a; }
+
+    /* ── Cards / Callouts ──────────────────────────────────── */
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: .75rem;
+      padding: 1.5rem 1.75rem;
+      margin: 1.25rem 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .card h4 {
+      font-size: .95rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: .5rem;
+    }
+    .card p:last-child { margin-bottom: 0; }
+
+    .callout {
+      border-left: 4px solid #38bdf8;
+      background: #f0f9ff;
+      padding: 1rem 1.25rem;
+      border-radius: 0 .5rem .5rem 0;
+      margin: 1.25rem 0;
+    }
+    .callout.green  { border-left-color: #22c55e; background: #f0fdf4; }
+    .callout.amber  { border-left-color: #f59e0b; background: #fffbeb; }
+    .callout.purple { border-left-color: #8b5cf6; background: #f5f3ff; }
+
+    /* ── Tables ─────────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: .9rem;
+    }
+    thead th {
+      background: #0f172a;
+      color: #e2e8f0;
+      text-align: left;
+      padding: .65rem 1rem;
+      font-weight: 600;
+    }
+    thead th:first-child { border-radius: .5rem 0 0 0; }
+    thead th:last-child  { border-radius: 0 .5rem 0 0; }
+    tbody td {
+      padding: .6rem 1rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    tbody tr:hover { background: #f8fafc; }
+
+    /* ── Badges ─────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: .2rem .55rem;
+      border-radius: 999px;
+      vertical-align: middle;
+    }
+    .badge.blue   { background: #dbeafe; color: #1e40af; }
+    .badge.green  { background: #dcfce7; color: #166534; }
+    .badge.amber  { background: #fef3c7; color: #92400e; }
+    .badge.purple { background: #ede9fe; color: #5b21b6; }
+
+    /* ── Flow Diagram (CSS-only) ───────────────────────────── */
+    .flow {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin: 1.25rem 0;
+    }
+    .flow-step {
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: .5rem;
+      padding: .5rem 1rem;
+      font-size: .85rem;
+      font-weight: 600;
+      color: #334155;
+      text-align: center;
+      min-width: 120px;
+    }
+    .flow-arrow {
+      font-size: 1.25rem;
+      color: #94a3b8;
+    }
+
+    /* ── Code / Mono ───────────────────────────────────────── */
+    code {
+      font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+      font-size: .85em;
+      background: #f1f5f9;
+      padding: .15em .4em;
+      border-radius: .25rem;
+    }
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 2rem 1.25rem; }
+    }
+    @media print {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- ════════════════ SIDEBAR / TABLE OF CONTENTS ════════════════ -->
+  <aside class="sidebar">
+    <div class="brand">Local-First<br/>Enterprise RAG</div>
+
+    <h2>Table of Contents</h2>
+    <nav>
+      <a href="#overview">1. Executive Overview</a>
+      <a href="#architecture" class="sub">1.1 Architectural Vision</a>
+      <a href="#value-prop" class="sub">1.2 Value Proposition</a>
+
+      <a href="#tech-stack">2. Technical Architecture</a>
+      <a href="#stack-matrix" class="sub">2.1 Technology Stack</a>
+      <a href="#vector-store" class="sub">2.2 Vector Store Design</a>
+      <a href="#ingestion" class="sub">2.3 Ingestion Pipeline</a>
+      <a href="#hybrid-search" class="sub">2.4 Hybrid Search</a>
+      <a href="#rag-loop" class="sub">2.5 RAG Orchestration Loop</a>
+      <a href="#implementation" class="sub">2.6 Implementation Tasks</a>
+
+      <a href="#deployment">3. Deployment &amp; Hosting</a>
+      <a href="#hosting-matrix" class="sub">3.1 Hosting Matrix</a>
+      <a href="#phase-a" class="sub">3.2 Phase A &mdash; Local-First</a>
+      <a href="#phase-b" class="sub">3.3 Phase B &mdash; Cloud-Native</a>
+
+      <a href="#cloud-architecture">4. Cloud Architecture Decisions</a>
+      <a href="#diskann" class="sub">4.1 DiskANN Optimization</a>
+      <a href="#privacy" class="sub">4.2 Privacy-First Guardrails</a>
+      <a href="#zero-trust" class="sub">4.3 Zero-Trust Identity</a>
+
+      <a href="#outreach">5. Career Outreach Strategy</a>
+      <a href="#positioning" class="sub">5.1 Market Positioning</a>
+      <a href="#skills" class="sub">5.2 Skills &amp; Differentiators</a>
+      <a href="#campaign" class="sub">5.3 Marketing Campaign</a>
+      <a href="#keywords" class="sub">5.4 Recruiter Keywords</a>
+      <a href="#direct-outreach" class="sub">5.5 Direct Outreach</a>
+    </nav>
+  </aside>
+
+  <!-- ════════════════ MAIN CONTENT ══════════════════════════════ -->
+  <main class="main">
+
+    <!-- ── 1. Executive Overview ─────────────────────────────── -->
+    <h1 id="overview">Local-First Enterprise RAG</h1>
+    <p class="subtitle">Project Requirements, Architecture &amp; Career Outreach Strategy</p>
+
+    <div class="callout">
+      <strong>Target Environment:</strong> Windows 11 / Server 2025 &nbsp;|&nbsp; .NET 9 &nbsp;|&nbsp; Docker Desktop<br/>
+      <strong>Primary Objective:</strong> Build a production-ready, air-gapped Retrieval-Augmented Generation system using SQL Server 2025's native vector capabilities and local LLM orchestration.
+    </div>
+
+    <h3 id="architecture">1.1&ensp;Architectural Vision</h3>
+    <p>
+      This project follows a <strong>Hybrid Portability</strong> philosophy. It is developed
+      <em>Local-First</em> to prove data sovereignty and zero-cloud dependency, then deployed to a
+      <strong>Unified Microsoft Stack</strong> (Azure + SQL Server 2025) to demonstrate enterprise-grade
+      scalability. The result is a single codebase that runs identically on a developer laptop and in
+      a multi-tenant cloud environment.
+    </p>
+
+    <h3 id="value-prop">1.2&ensp;Value Proposition</h3>
+    <div class="card">
+      <p>
+        <em>"I bridge the gap between legacy SQL infrastructure and modern AI, specializing in
+        high-security, low-cost, on-premise AI deployments."</em>
+      </p>
+      <p>
+        With 23+ years of enterprise SQL Server experience, this project demonstrates a pragmatic
+        approach to AI adoption: one that respects data governance, eliminates recurring
+        cloud-token costs, and extends existing infrastructure rather than replacing it.
+      </p>
+    </div>
+
+    <!-- ── 2. Technical Architecture ─────────────────────────── -->
+    <h2 id="tech-stack">2. Technical Architecture</h2>
+
+    <h3 id="stack-matrix">2.1&ensp;Technology Stack</h3>
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>Technology</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge blue">Database</span></td>
+          <td>SQL Server 2025 (Preview)</td>
+          <td>Native <code>VECTOR</code> data type &amp; DiskANN indexing</td>
+        </tr>
+        <tr>
+          <td><span class="badge green">LLM / Embeddings</span></td>
+          <td>Ollama</td>
+          <td><code>llama3.2</code> for generation; <code>mxbai-embed-large</code> for embeddings</td>
+        </tr>
+        <tr>
+          <td><span class="badge purple">Orchestration</span></td>
+          <td>.NET 9 (C#) + Semantic Kernel</td>
+          <td>Service layer, dependency injection, RAG pipeline coordination</td>
+        </tr>
+        <tr>
+          <td><span class="badge amber">API Gateway</span></td>
+          <td>Nginx (Reverse Proxy)</td>
+          <td>HTTPS bridge required by SQL Server 2025 external REST endpoints</td>
+        </tr>
+        <tr>
+          <td><span class="badge blue">Frontend</span></td>
+          <td>WPF (Desktop)</td>
+          <td>Emphasizes the local / on-prem nature of the system</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 id="vector-store">2.2&ensp;Vector Store Design</h3>
+    <p>
+      The vector store is built directly into the relational data model by extending the existing
+      <code>AdventureWorksDW2020.DimProduct</code> table with a <code>VECTOR(1024)</code> column
+      named <strong>DescriptionVector</strong>. This approach avoids a separate vector database,
+      keeping all data&mdash;relational and semantic&mdash;in a single, governable engine.
+    </p>
+
+    <h3 id="ingestion">2.3&ensp;Ingestion Pipeline</h3>
+    <div class="card">
+      <h4>Batch Embedding Service</h4>
+      <p>
+        A dedicated C# service iterates through the <code>EnglishDescription</code> field of each
+        product record, calls the local Ollama embedding API (<code>mxbai-embed-large</code>), and
+        performs a bulk <code>UPDATE</code> to populate the <code>DescriptionVector</code> column.
+        This pipeline is idempotent and can be re-run as product data changes.
+      </p>
+    </div>
+
+    <h3 id="hybrid-search">2.4&ensp;Hybrid Search</h3>
+    <p>
+      Search combines <strong>semantic similarity</strong> with <strong>metadata filtering</strong>
+      in a single T-SQL stored procedure:
+    </p>
+    <ul>
+      <li><strong>Vector Distance:</strong> The <code>VECTOR_DISTANCE</code> function (Cosine Similarity)
+          ranks products by semantic relevance to the user's query embedding.</li>
+      <li><strong>Metadata Filter:</strong> Standard <code>LIKE</code> or <code>CONTAINS</code>
+          predicates narrow results by category, color, or other structured attributes.</li>
+    </ul>
+    <p>
+      This hybrid approach leverages 20+ years of T-SQL indexing expertise alongside modern
+      vector search&mdash;proving that AI enhances the relational database rather than replacing it.
+    </p>
+
+    <h3 id="rag-loop">2.5&ensp;RAG Orchestration Loop</h3>
+    <div class="flow">
+      <div class="flow-step">User asks<br/>question in WPF</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">Convert query<br/>to vector (Ollama)</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">Hybrid Search<br/>SQL Server 2025</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">Top 5 products<br/>+ user question</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">Generate NL<br/>response (Ollama)</div>
+    </div>
+    <ol>
+      <li>The user submits a natural-language question through the WPF interface.</li>
+      <li>The application converts the question into a 1024-dimensional embedding via the local Ollama API.</li>
+      <li>The embedding is sent to SQL Server 2025, which executes the hybrid search stored procedure
+          and returns the <strong>Top 5</strong> most semantically relevant products.</li>
+      <li>The retrieved product data and the original question are composed into a prompt and sent
+          to Ollama (<code>llama3.2</code>) for natural-language answer generation.</li>
+    </ol>
+
+    <h3 id="implementation">2.6&ensp;Implementation Tasks</h3>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Task</th><th>Details</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>T-SQL Schema Script</td>
+          <td>Enable external REST endpoints; create / alter table with <code>VECTOR(1024)</code> column</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Embedding Client</td>
+          <td>C# <code>HttpClient</code>-based service to call the Ollama embedding API</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Search Service</td>
+          <td>Execute <code>VECTOR_DISTANCE</code> hybrid query; return ranked product results</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>WPF User Interface</td>
+          <td>Search input, results pane with Markdown rendering, status indicators</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ── 3. Deployment & Hosting ───────────────────────────── -->
+    <h2 id="deployment">3. Deployment &amp; Hosting Strategy</h2>
+    <p>
+      The deployment follows a <strong>Single-Cloud, Multi-Tier</strong> approach on Microsoft Azure,
+      leveraging the same T-SQL engine used during local development to minimize migration friction
+      and eliminate the "learning tax" of switching platforms.
+    </p>
+
+    <h3 id="hosting-matrix">3.1&ensp;Azure Hosting Matrix</h3>
+    <table>
+      <thead>
+        <tr><th>Component</th><th>Azure Service</th><th>Rationale</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge blue">Database</span></td>
+          <td>Azure SQL Managed Instance (SQL 2025 Tier)</td>
+          <td>Native <code>VECTOR</code> types &amp; DiskANN indexing with 100% T-SQL compatibility</td>
+        </tr>
+        <tr>
+          <td><span class="badge green">AI Model (Ollama)</span></td>
+          <td>Azure Container Apps (GPU-enabled)</td>
+          <td>Private, secure endpoint accessible only to the application tier</td>
+        </tr>
+        <tr>
+          <td><span class="badge purple">Backend App</span></td>
+          <td>Azure App Service (.NET 9)</td>
+          <td>Native C# support with Entra ID (Active Directory) integration</td>
+        </tr>
+        <tr>
+          <td><span class="badge amber">Security Proxy</span></td>
+          <td>Nginx (Sidecar Container)</td>
+          <td>HTTPS bridge between SQL Server and the Ollama REST API</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 id="phase-a">3.2&ensp;Phase A &mdash; Local-First Development <span class="badge green">Sovereign Proof</span></h3>
+    <div class="card">
+      <h4>Objective</h4>
+      <p>
+        Prove the system operates entirely <strong>air-gapped</strong>&mdash;no data leaves the
+        developer's machine. All services (SQL Server 2025, Ollama, Nginx) run in Docker Desktop
+        containers on the local workstation.
+      </p>
+      <h4>Deliverable</h4>
+      <p>
+        A fully functional .NET 9 WPF application scaffolded with Claude Code, connected to a
+        local SQL Server 2025 container, demonstrating end-to-end RAG with zero external dependencies.
+      </p>
+    </div>
+
+    <h3 id="phase-b">3.3&ensp;Phase B &mdash; Cloud-Native Staging <span class="badge purple">Enterprise Proof</span></h3>
+    <div class="card">
+      <h4>Objective</h4>
+      <p>
+        Demonstrate the ability to scale the identical codebase to thousands of concurrent users
+        on Azure infrastructure.
+      </p>
+      <h4>Deliverable</h4>
+      <p>
+        A <strong>GitHub Actions CI/CD pipeline</strong> that, on push to <code>main</code>,
+        automatically deploys the application to Azure App Service and applies schema migrations
+        to Azure SQL Managed Instance.
+      </p>
+    </div>
+
+    <!-- ── 4. Cloud Architecture Decisions ───────────────────── -->
+    <h2 id="cloud-architecture">4. Cloud Architecture Decisions</h2>
+    <p>
+      The following architectural decisions are specifically selected to resonate with enterprise
+      security reviewers, hiring managers, and technical leadership evaluating this portfolio.
+    </p>
+
+    <h3 id="diskann">4.1&ensp;DiskANN Optimization</h3>
+    <div class="callout green">
+      <strong>Decision:</strong> SQL Server 2025 was chosen specifically for its <strong>DiskANN</strong>
+      algorithm (developed by Microsoft Research), which maintains <strong>95% recall accuracy</strong>
+      while searching datasets larger than available RAM. This eliminates the need for specialized
+      vector databases like Pinecone, significantly reducing infrastructure cost and operational
+      complexity.
+    </div>
+
+    <h3 id="privacy">4.2&ensp;Privacy-First Guardrails</h3>
+    <div class="callout amber">
+      <strong>Decision:</strong> Ollama is hosted in a <strong>private Azure Container</strong>,
+      ensuring that corporate data used for retrieval-augmented generation is never exposed to
+      public AI training pipelines. Unlike OpenAI's default terms of service, this architecture
+      guarantees that sensitive enterprise data remains within the organization's security boundary.
+    </div>
+
+    <h3 id="zero-trust">4.3&ensp;Zero-Trust Identity (Managed Identity)</h3>
+    <div class="callout purple">
+      <strong>Decision:</strong> The C# application connects to SQL Server using
+      <strong>Azure Managed Identities</strong>, eliminating all passwords and connection strings
+      from source code. This is a critical security posture for regulated industries and
+      represents a significant green flag for Security Architects during portfolio review.
+    </div>
+
+    <!-- ── 5. Career Outreach Strategy ───────────────────────── -->
+    <h2 id="outreach">5. Career Outreach Strategy</h2>
+
+    <h3 id="positioning">5.1&ensp;Market Positioning</h3>
+    <div class="card">
+      <h4>Role Identity</h4>
+      <p><strong>Enterprise AI Data Architect</strong> &mdash; 23+ Years of SQL Server Experience</p>
+      <h4>Target Sectors</h4>
+      <p>
+        Finance, Healthcare, Defense, and other regulated industries where
+        <strong>data governance and security</strong> outweigh novelty. The portfolio emphasizes
+        compliance-readiness, cost containment, and zero-trust architecture over experimental
+        "cool factor."
+      </p>
+    </div>
+
+    <h3 id="skills">5.2&ensp;Skills &amp; Differentiators</h3>
+    <table>
+      <thead>
+        <tr><th>Differentiator</th><th>What It Demonstrates</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Data Sovereignty</strong></td>
+          <td>100% of PII remains inside the firewall; no data leaves the organization's perimeter</td>
+        </tr>
+        <tr>
+          <td><strong>Hybrid Search Optimization</strong></td>
+          <td>Two decades of T-SQL indexing expertise fused with 2025/2026 vector search capabilities</td>
+        </tr>
+        <tr>
+          <td><strong>Cost Containment</strong></td>
+          <td>Migrating from OpenAI/Azure AI token billing to local SQL + Ollama saves thousands monthly</td>
+        </tr>
+        <tr>
+          <td><strong>SQL Server 2025 Early Adopter</strong></td>
+          <td>Demonstrates forward-looking alignment with the Microsoft data platform roadmap</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 id="campaign">5.3&ensp;Marketing Campaign</h3>
+
+    <h4 style="margin-top:1.25rem;">LinkedIn Case Study Post</h4>
+    <div class="card">
+      <h4>Title</h4>
+      <p><em>"Why I Moved My RAG Stack from the Cloud to SQL Server 2025"</em></p>
+      <h4>Hook</h4>
+      <p>
+        "Privacy and cost are the two biggest blockers for Enterprise AI. I built a solution
+        that solves both."
+      </p>
+      <h4>Content Framework</h4>
+      <ul>
+        <li>Three concise bullet points on the technology: SQL 2025 + Ollama + C# / Semantic Kernel</li>
+        <li>A 30-second screen recording of the WPF application returning real-time search results</li>
+        <li>Clear call-to-action linking to the live Azure-hosted demo and this portfolio site</li>
+      </ul>
+    </div>
+
+    <h3 id="keywords">5.4&ensp;Recruiter &amp; ATS Keywords</h3>
+    <p>
+      The following terms should appear consistently across the portfolio site, LinkedIn profile,
+      and resume to maximize visibility with AI-recruiter tools and Applicant Tracking Systems:
+    </p>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0;">
+      <span class="badge blue" style="font-size:.8rem;padding:.35rem .75rem;">Vector Databases in SQL Server</span>
+      <span class="badge purple" style="font-size:.8rem;padding:.35rem .75rem;">Semantic Kernel (.NET)</span>
+      <span class="badge green" style="font-size:.8rem;padding:.35rem .75rem;">On-Premise LLM Deployment</span>
+      <span class="badge amber" style="font-size:.8rem;padding:.35rem .75rem;">RAG Architecture Governance</span>
+      <span class="badge blue" style="font-size:.8rem;padding:.35rem .75rem;">Hybrid Semantic Search</span>
+      <span class="badge purple" style="font-size:.8rem;padding:.35rem .75rem;">Air-Gapped AI</span>
+      <span class="badge green" style="font-size:.8rem;padding:.35rem .75rem;">DiskANN / Vector Indexing</span>
+      <span class="badge amber" style="font-size:.8rem;padding:.35rem .75rem;">Zero-Trust / Managed Identity</span>
+    </div>
+
+    <h3 id="direct-outreach">5.5&ensp;Direct Outreach Template</h3>
+    <div class="callout">
+      <strong>Target Audience:</strong> CTOs, VPs of Data, and Engineering Directors at organizations
+      that prioritize data privacy.
+    </div>
+    <div class="card">
+      <h4>Outreach Message Template</h4>
+      <p style="font-style:italic;color:#475569;">
+        "I've spent 23 years managing SQL Server environments at the enterprise level. I recently
+        completed a series of projects focused on <strong>On-Premise AI Governance</strong> using the
+        new SQL Server 2025 vector capabilities. I noticed your organization prioritizes data
+        privacy&mdash;I'd welcome the opportunity to demonstrate how to implement production-grade
+        RAG without the cloud-provider 'tax,' keeping 100% of sensitive data inside your firewall."
+      </p>
+    </div>
+
+    <!-- ── Footer ────────────────────────────────────────────── -->
+    <hr style="margin:3rem 0 1.5rem;border:none;border-top:1px solid #e2e8f0;" />
+    <p style="font-size:.8rem;color:#94a3b8;">
+      Local-First Enterprise RAG &mdash; Portfolio Project Requirements &amp; Strategy Document
+    </p>
+  </main>
+</div>
+</body>
+</html>
