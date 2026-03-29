@@ -5,4 +5,5 @@
   <Project Path="EnterpriseRag.Desktop/EnterpriseRag.Desktop.csproj" />
   <Project Path="EnterpriseRag.Infrastructure/EnterpriseRag.Infrastructure.csproj" />
   <Project Path="EnterpriseRag.Ingestion/EnterpriseRag.Ingestion.csproj" />
+  <Project Path="EnterpriseRag.Web/EnterpriseRag.Web.csproj" />
 </Solution>
