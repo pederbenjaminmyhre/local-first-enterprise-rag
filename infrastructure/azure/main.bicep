@@ -61,11 +61,12 @@ resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2023-08-01-previe
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: '${projectName}-plan'
   location: location
+  kind: 'linux'
   sku: {
     name: appServiceSku
   }
   properties: {
-    reserved: false // Windows
+    reserved: true // Linux
   }
 }
 
@@ -79,7 +80,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
-      netFrameworkVersion: 'v9.0'
+      linuxFxVersion: 'DOTNETCORE|9.0'
       alwaysOn: appServiceSku != 'F1'
       appSettings: [
         {

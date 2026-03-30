@@ -6,7 +6,7 @@
       "value": "enterpriserag"
     },
     "appServiceSku": {
-      "value": "B1"
+      "value": "F1"
     },
     "sqlAdminPassword": {
       "value": ""
