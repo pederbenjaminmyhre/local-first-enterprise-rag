@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Getting Started Guide — Local-First Enterprise RAG</title>
+<style>
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: #1e293b; background: #fff; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.8; }
+  h1 { font-size: 1.75rem; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: .5rem; }
+  h2 { font-size: 1.25rem; color: #334155; margin-top: 2rem; }
+  h3 { font-size: 1.05rem; color: #475569; margin-top: 1.25rem; }
+  p { margin-bottom: 1rem; }
+  code { background: #f1f5f9; padding: .1em .35em; border-radius: .2rem; font-family: "Cascadia Code", Consolas, monospace; font-size: .85em; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: .5rem; overflow-x: auto; font-size: .85rem; margin: 1rem 0; }
+  .tip { background: #f0fdf4; border-left: 4px solid #22c55e; padding: .75rem 1rem; border-radius: 0 .5rem .5rem 0; margin: 1rem 0; }
+  .warn { background: #fffbeb; border-left: 4px solid #f59e0b; padding: .75rem 1rem; border-radius: 0 .5rem .5rem 0; margin: 1rem 0; }
+  ul, ol { margin: .5rem 0 1rem 1.5rem; }
+  li { margin-bottom: .4rem; }
+  footer { margin-top: 2rem; font-size: .8rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: .75rem; }
+</style>
+</head>
+<body>
+
+<h1>Getting Started Guide</h1>
+
+<h2>Prerequisites</h2>
+<ul>
+  <li><strong>.NET 9 SDK</strong> — <code>dotnet --version</code> should return 9.x or higher</li>
+  <li><strong>Docker Desktop</strong> — for running SQL Server 2025 locally</li>
+  <li><strong>Ollama</strong> — installed natively on Windows for local LLM inference</li>
+</ul>
+
+<h2>Initial Setup (One-Time)</h2>
+
+<h3>1. Start Docker and SQL Server</h3>
+<pre>docker compose up -d</pre>
+<p>This starts SQL Server 2025 and Nginx. Wait until the health checks pass:</p>
+<pre>docker ps   # All containers should show "healthy"</pre>
+
+<h3>2. Restore the Database</h3>
+<p>Download the AdventureWorksDW2022 backup and place it at <code>infrastructure/scripts/AdventureWorksDW2020.bak</code>, then run:</p>
+<pre>docker exec rag-sql-server bash /scripts/init-db.sh</pre>
+<p>This restores the database and applies all four SQL migration scripts (vector column, stored procedure, index).</p>
+
+<h3>3. Pull Ollama Models</h3>
+<pre>ollama pull mxbai-embed-large
+ollama pull llama3.2:1b</pre>
+
+<h3>4. Run the Ingestion Pipeline</h3>
+<pre>cd src/EnterpriseRag.Ingestion
+dotnet run</pre>
+<p>This embeds all product descriptions into the database. Takes approximately 5 minutes on first run. Safe to re-run — it only processes products with missing embeddings.</p>
+
+<h2>Using the Desktop Application (WPF)</h2>
+
+<h3>Launch</h3>
+<pre>dotnet run --project src/EnterpriseRag.Desktop</pre>
+
+<h3>Use Case 1: Basic Product Search</h3>
+<ol>
+  <li>Type a natural-language question in the search box, e.g., <strong>"What mountain bikes do you have?"</strong></li>
+  <li>Click <strong>Search</strong> (or press Enter)</li>
+  <li>The <strong>Sources</strong> panel populates within seconds showing the top 5 most relevant products with similarity scores</li>
+  <li>The <strong>AI Response</strong> panel streams the LLM's answer token by token</li>
+</ol>
+
+<h3>Use Case 2: Filtered Search</h3>
+<ol>
+  <li>Select a category from the <strong>Category</strong> dropdown (e.g., "Road Bikes")</li>
+  <li>Optionally select a color from the <strong>Color</strong> dropdown (e.g., "Red")</li>
+  <li>Type your question: <strong>"Which is the lightest option?"</strong></li>
+  <li>Click <strong>Search</strong> — results are filtered to only products matching your category and color</li>
+</ol>
+
+<h3>Use Case 3: Comparing Products</h3>
+<ol>
+  <li>Ask a comparative question: <strong>"Compare your touring bikes for long-distance trips"</strong></li>
+  <li>The AI response synthesizes information from multiple source products</li>
+  <li>Review the Sources panel to see the raw product data and similarity scores</li>
+</ol>
+
+<div class="tip">
+  <strong>Tip:</strong> The status bar at the bottom shows timing information — how many products were retrieved and how long the AI generation took.
+</div>
+
+<h3>Use Case 4: Cancel a Long Query</h3>
+<p>If the AI response is taking too long, click the <strong>Cancel</strong> button that appears during search. This cancels the LLM generation immediately.</p>
+
+<h2>Using the Web Application (Azure)</h2>
+<p>The web version is available at your Azure deployment URL. The interface mirrors the desktop application:</p>
+<ol>
+  <li>Open the URL in any browser</li>
+  <li>Type a question in the search box</li>
+  <li>Select optional category and color filters</li>
+  <li>Click <strong>Search</strong></li>
+  <li>The AI response and sources appear in the same layout as the desktop version</li>
+</ol>
+
+<div class="warn">
+  <strong>Note:</strong> The Azure deployment uses CPU-only Ollama with scale-to-zero. The first query after idle may take 30–60 seconds as the container wakes up. Subsequent queries respond faster while the container is warm.
+</div>
+
+<h2>Running Tests</h2>
+<pre># Unit tests (no services required)
+dotnet test tests/EnterpriseRag.Tests.Unit
+
+# Integration tests (requires Docker + Ollama running)
+dotnet test tests/EnterpriseRag.Tests.Integration
+
+# All tests
+dotnet test src/EnterpriseRag.slnx</pre>
+
+<footer>Local-First Enterprise RAG — Getting Started Guide</footer>
+</body>
+</html>

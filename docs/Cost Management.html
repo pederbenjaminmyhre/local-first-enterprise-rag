@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cost Management — Local-First Enterprise RAG</title>
+<style>
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: #1e293b; background: #fff; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.8; }
+  h1 { font-size: 1.75rem; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: .5rem; }
+  h2 { font-size: 1.25rem; color: #334155; margin-top: 2rem; }
+  h3 { font-size: 1.05rem; color: #475569; margin-top: 1.25rem; }
+  p { margin-bottom: 1rem; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .9rem; }
+  th { background: #0f172a; color: #e2e8f0; text-align: left; padding: .5rem .75rem; }
+  td { padding: .5rem .75rem; border-bottom: 1px solid #e2e8f0; }
+  .saving { background: #f0fdf4; border-left: 4px solid #22c55e; padding: .75rem 1rem; border-radius: 0 .5rem .5rem 0; margin: 1rem 0; }
+  .warn { background: #fffbeb; border-left: 4px solid #f59e0b; padding: .75rem 1rem; border-radius: 0 .5rem .5rem 0; margin: 1rem 0; }
+  .metric { display: inline-block; background: #0f172a; color: #22c55e; padding: .3rem .75rem; border-radius: .4rem; font-weight: 700; font-size: .9rem; margin-right: .5rem; }
+  ul { margin: .5rem 0 1rem 1.5rem; }
+  li { margin-bottom: .35rem; }
+  code { background: #f1f5f9; padding: .1em .35em; border-radius: .2rem; font-family: "Cascadia Code", Consolas, monospace; font-size: .85em; }
+  footer { margin-top: 2rem; font-size: .8rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: .75rem; }
+</style>
+</head>
+<body>
+
+<h1>Cost Management</h1>
+<p>This document outlines the cost optimization strategies employed across the Local-First Enterprise RAG system, comparing our approach against industry-standard alternatives and quantifying the savings achieved.</p>
+
+<h2>Azure Monthly Cost Breakdown</h2>
+<table>
+  <tr><th>Resource</th><th>SKU / Tier</th><th>Monthly Cost</th><th>Alternative</th><th>Alternative Cost</th></tr>
+  <tr><td>Azure SQL Database</td><td>Basic (5 DTU, 2 GB)</td><td><strong>~$5</strong></td><td>SQL Managed Instance</td><td>~$350+</td></tr>
+  <tr><td>App Service</td><td>F1 (Free)</td><td><strong>$0</strong></td><td>B1 (Basic)</td><td>~$13</td></tr>
+  <tr><td>Container App (Ollama)</td><td>CPU, scale-to-zero</td><td><strong>~$0–15</strong></td><td>Always-on GPU</td><td>~$150+</td></tr>
+  <tr><td>Container App Environment</td><td>Consumption</td><td><strong>~$0</strong></td><td>—</td><td>—</td></tr>
+  <tr><td><strong>Total</strong></td><td></td><td><strong>~$5–20/mo</strong></td><td></td><td><strong>~$513+</strong></td></tr>
+</table>
+
+<div class="saving">
+  <span class="metric">96% Cost Reduction</span>
+  Estimated savings of <strong>$490+/month</strong> compared to a standard enterprise deployment with SQL Managed Instance, always-on GPU containers, and Basic App Service.
+</div>
+
+<h2>Cost Optimization Strategies</h2>
+
+<h3>1. Scale-to-Zero Container App</h3>
+<p>The Ollama LLM container is configured with <code>minReplicas: 0</code> and <code>maxReplicas: 1</code>. When no queries are being processed, the container shuts down entirely and incurs zero compute charges. This is the single largest cost saving — a continuously running GPU container costs $100–$300/month, while our scale-to-zero configuration charges only for actual inference time.</p>
+<ul>
+  <li><strong>Trade-off:</strong> First query after idle takes 30–60 seconds (cold start + model loading)</li>
+  <li><strong>Mitigation:</strong> For demos, send a warm-up query before the presentation</li>
+  <li><strong>Production note:</strong> Set <code>minReplicas: 1</code> during business hours if consistent response time is required</li>
+</ul>
+
+<h3>2. Azure SQL Database Basic Tier</h3>
+<p>The Basic tier ($4.99/month) provides 5 DTUs and 2 GB storage — more than sufficient for the 25-product demo dataset with vector embeddings. The full AdventureWorksDW2020 dataset (606 products) would fit comfortably within this limit.</p>
+<div class="saving">
+  <strong>Savings vs. SQL Managed Instance:</strong> The original CLAUDE.md plan specified Azure SQL Managed Instance ($350+/month). By confirming that Azure SQL Database Basic tier supports the <code>VECTOR</code> data type and <code>VECTOR_DISTANCE</code> function, we reduced database costs by 98%.
+</div>
+
+<h3>3. Free App Service Tier</h3>
+<p>The F1 (Free) App Service tier hosts the .NET 9 web application at zero cost. Limitations include no custom domain, no SSL certificate, and shared compute — all acceptable for a portfolio demo. Upgrading to B1 ($13/month) adds custom domains and dedicated compute when needed.</p>
+
+<h3>4. Eliminating External AI API Costs</h3>
+<p>By running Ollama locally and in Azure Container Apps, the system avoids all per-token API charges from OpenAI, Azure AI, or other LLM providers.</p>
+<table>
+  <tr><th>Approach</th><th>Cost Model</th><th>Est. Monthly Cost (1,000 queries)</th></tr>
+  <tr><td>OpenAI GPT-4o</td><td>Per-token</td><td>$50–$200</td></tr>
+  <tr><td>Azure OpenAI Service</td><td>Per-token + provisioned</td><td>$100–$500</td></tr>
+  <tr><td>Our approach (Ollama)</td><td>Compute time only</td><td><strong>$5–$15</strong></td></tr>
+</table>
+
+<h3>5. Eliminating Dedicated Vector Database</h3>
+<p>SQL Server 2025's native <code>VECTOR</code> type and <code>VECTOR_DISTANCE</code> function eliminate the need for a separate vector database service.</p>
+<table>
+  <tr><th>Vector Database</th><th>Monthly Cost</th></tr>
+  <tr><td>Pinecone (Starter)</td><td>$70+</td></tr>
+  <tr><td>Weaviate Cloud</td><td>$25+</td></tr>
+  <tr><td>Qdrant Cloud</td><td>$25+</td></tr>
+  <tr><td>SQL Server 2025 (built-in)</td><td><strong>$0 additional</strong></td></tr>
+</table>
+
+<h2>Local Development: Zero Cloud Cost</h2>
+<p>The local-first design means all development, testing, and demonstration can occur entirely on a developer's machine using Docker Desktop and native Ollama — at zero cloud cost. Azure is only needed for the "enterprise scalability" proof, not for day-to-day development or demonstrations.</p>
+
+<h2>Cost Monitoring Best Practices</h2>
+<ul>
+  <li><strong>Set Azure budget alerts</strong> — configure a $25/month budget with email alerts at 50%, 80%, and 100%</li>
+  <li><strong>Monitor Container App replica count</strong> — ensure scale-to-zero is functioning by checking that replicas drop to 0 after idle timeout</li>
+  <li><strong>Review DTU utilization</strong> — if the Basic tier's 5 DTUs become a bottleneck during demos, upgrade to S0 ($15/month) only when needed, then downgrade afterward</li>
+  <li><strong>Shut down when not demoing</strong> — for maximum savings, stop the Container App entirely between demo sessions: <code>az containerapp update --name enterpriserag2-ollama --resource-group enterpriserag2-rg --min-replicas 0 --max-replicas 0</code></li>
+  <li><strong>Use the health endpoint</strong> — <code>/api/health</code> shows whether Ollama is running, helping you verify scale-to-zero is active before being billed</li>
+</ul>
+
+<div class="warn">
+  <strong>Important:</strong> Container App models (llama3.2, mxbai-embed-large) are stored in ephemeral storage. If the container restarts after scaling to zero, models must be re-pulled (~3 minutes). For a scheduled demo, warm up the container 5 minutes before by hitting the health endpoint.
+</div>
+
+<h2>Cost Comparison Summary</h2>
+<table>
+  <tr><th>Component</th><th>Industry Standard</th><th>Our Approach</th><th>Monthly Savings</th></tr>
+  <tr><td>Database</td><td>SQL Managed Instance ($350)</td><td>SQL Database Basic ($5)</td><td><strong>$345</strong></td></tr>
+  <tr><td>LLM Inference</td><td>OpenAI API ($100+)</td><td>Ollama scale-to-zero ($5–15)</td><td><strong>$85+</strong></td></tr>
+  <tr><td>Vector Database</td><td>Pinecone ($70)</td><td>Built into SQL Server ($0)</td><td><strong>$70</strong></td></tr>
+  <tr><td>Web Hosting</td><td>App Service B1 ($13)</td><td>App Service F1 ($0)</td><td><strong>$13</strong></td></tr>
+  <tr><td><strong>Total</strong></td><td><strong>$533+</strong></td><td><strong>$10–20</strong></td><td><strong>$513+/month</strong></td></tr>
+</table>
+
+<footer>Local-First Enterprise RAG — Cost Management</footer>
+</body>
+</html>

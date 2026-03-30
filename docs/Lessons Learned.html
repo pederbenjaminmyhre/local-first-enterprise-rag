@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lessons Learned — Local-First Enterprise RAG</title>
+<style>
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: #1e293b; background: #fff; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.8; }
+  h1 { font-size: 1.75rem; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: .5rem; }
+  h2 { font-size: 1.25rem; color: #334155; margin-top: 2rem; }
+  p { margin-bottom: 1rem; }
+  .lesson { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: .75rem; padding: 1.25rem; margin: 1.25rem 0; }
+  .lesson h3 { font-size: 1rem; color: #0f172a; margin: 0 0 .5rem 0; }
+  .lesson .label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; padding: .15rem .5rem; border-radius: 999px; display: inline-block; margin-bottom: .5rem; }
+  .label.infra { background: #dbeafe; color: #1e40af; }
+  .label.perf { background: #dcfce7; color: #166534; }
+  .label.test { background: #fef3c7; color: #92400e; }
+  .label.cloud { background: #ede9fe; color: #5b21b6; }
+  .label.dev { background: #fce7f3; color: #9d174d; }
+  footer { margin-top: 2rem; font-size: .8rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: .75rem; }
+</style>
+</head>
+<body>
+
+<h1>Lessons Learned</h1>
+<p>This document captures key insights gained during the development and deployment of the Local-First Enterprise RAG system. These lessons are grouped by theme and presented in order of impact.</p>
+
+<h2>Infrastructure &amp; Networking</h2>
+
+<div class="lesson">
+  <span class="label infra">Infrastructure</span>
+  <h3>IPv6 Connectivity Can Silently Break Docker and Azure CLI</h3>
+  <p>Docker Desktop on Windows (via WSL2) and the Azure CLI both resolve hostnames to IPv6 by default. When IPv6 connectivity is unreliable — which is common on residential networks and some corporate firewalls — Docker image pulls and Azure deployments fail with cryptic "Connection reset" errors. The fix required adding IPv4 entries to the WSL2 VM's hosts file and temporarily disabling IPv6 on the Wi-Fi adapter. <strong>Takeaway:</strong> When troubleshooting connection failures in containerized environments, always check IPv4 vs. IPv6 resolution first.</p>
+</div>
+
+<div class="lesson">
+  <span class="label infra">Infrastructure</span>
+  <h3>Azure Resource Provider Registration Is Not Automatic</h3>
+  <p>A fresh Azure subscription requires manual registration of resource providers (Microsoft.Compute, Microsoft.Web, Microsoft.App, Microsoft.Sql, Microsoft.OperationalInsights) before any resources can be deployed. This is not obvious from error messages, which simply report "validation failed." Additionally, VM SKU quotas (Free, Basic, Standard) are separate per-SKU limits, distinct from the general "Total Regional vCPUs" quota. <strong>Takeaway:</strong> Register all required providers and request SKU-specific quotas before attempting Bicep deployments on new subscriptions.</p>
+</div>
+
+<div class="lesson">
+  <span class="label infra">Infrastructure</span>
+  <h3>SQL Server 2025 Docker Tag Naming Is Inconsistent</h3>
+  <p>The tag <code>2025-latest</code> exists on Microsoft Container Registry but was intermittently unreachable. The specific cumulative update tag (<code>2025-CU3-ubuntu-22.04</code>) also failed due to the same IPv6 issue. SQL Server 2025 has reached GA and is no longer "preview," but documentation still references preview tags. <strong>Takeaway:</strong> Always verify Docker image tags against the actual MCR registry, and have fallback tags ready.</p>
+</div>
+
+<h2>Performance &amp; Model Management</h2>
+
+<div class="lesson">
+  <span class="label perf">Performance</span>
+  <h3>Ollama Model Swapping Is the Primary Bottleneck</h3>
+  <p>Ollama loads only one model into memory at a time. Switching between the embedding model (<code>mxbai-embed-large</code>, 670 MB) and the generation model (<code>llama3.2</code>, 2 GB) takes 30–120 seconds depending on hardware and whether the container is using a volume mount or in-memory storage. This dominated test execution time and required test ordering strategies. <strong>Takeaway:</strong> Design test suites and application workflows to minimize model swaps — group all embedding operations before generation operations.</p>
+</div>
+
+<div class="lesson">
+  <span class="label perf">Performance</span>
+  <h3>CPU-Only LLM Inference Is Viable but Slow</h3>
+  <p>On an Intel Iris Xe (integrated GPU, no CUDA), <code>llama3.2:1b</code> generates ~200 characters in 20–25 seconds. The full <code>llama3.2</code> (3.2B params) takes over 60 seconds. This is acceptable for a demo but not for production. The same queries run in 2–3 seconds with a dedicated GPU (RTX 3060 or better). <strong>Takeaway:</strong> Always communicate hardware requirements alongside performance claims. The architecture is production-ready; the latency is a hardware constraint.</p>
+</div>
+
+<h2>Testing</h2>
+
+<div class="lesson">
+  <span class="label test">Testing</span>
+  <h3>FluentAssertions v8.x Hangs the xUnit Test Runner</h3>
+  <p>FluentAssertions 8.x introduced a commercial license check that, in certain environments, causes the test host process to hang indefinitely after printing the license warning. Downgrading to v7.2.0 resolved the issue immediately. The unit tests (which don't trigger the license check timing) were unaffected, making this difficult to diagnose. <strong>Takeaway:</strong> Pin test library versions and be cautious of major version upgrades that change licensing models.</p>
+</div>
+
+<div class="lesson">
+  <span class="label test">Testing</span>
+  <h3>Synchronous HTTP Calls Deadlock in xUnit</h3>
+  <p>The initial <code>SkippableFact</code> implementation used <code>.GetAwaiter().GetResult()</code> for a synchronous Ollama health check. This deadlocked within xUnit's synchronization context. Replacing it with <code>IAsyncLifetime.InitializeAsync</code> and standard <code>[Fact]</code> attributes resolved the issue. <strong>Takeaway:</strong> Never use blocking async calls (<code>.Result</code>, <code>.GetAwaiter().GetResult()</code>) in test frameworks that manage their own synchronization context.</p>
+</div>
+
+<h2>Cloud Deployment</h2>
+
+<div class="lesson">
+  <span class="label cloud">Cloud</span>
+  <h3>Azure SQL Database Supports VECTOR but Not .bak Restore</h3>
+  <p>Azure SQL Database (Basic tier) supports the <code>VECTOR(1024)</code> data type and <code>VECTOR_DISTANCE</code> function, confirming compatibility with the local SQL Server 2025 vector queries. However, it does not support restoring <code>.bak</code> backup files — data must be seeded via T-SQL scripts or BACPAC import. A seed script with 25 representative products was created for the Azure demo. <strong>Takeaway:</strong> Maintain both a backup-based approach (Docker/on-prem) and a script-based approach (cloud) for database initialization.</p>
+</div>
+
+<div class="lesson">
+  <span class="label cloud">Cloud</span>
+  <h3>Container App Models Don't Persist Across Restarts</h3>
+  <p>Ollama running in Azure Container Apps stores pulled models in the container's ephemeral filesystem. When the container scales to zero and restarts, models must be re-pulled. For production, a persistent volume or a custom Docker image with pre-baked models would be required. <strong>Takeaway:</strong> Scale-to-zero saves cost but introduces cold-start latency for both container boot and model loading.</p>
+</div>
+
+<div class="lesson">
+  <span class="label cloud">Cloud</span>
+  <h3>Region Selection Matters for New Subscriptions</h3>
+  <p>East US refused SQL Server creation ("not accepting new servers") while Central US worked. Quota availability and region restrictions vary by subscription type and age. <strong>Takeaway:</strong> Have 2–3 fallback regions planned, and create resources incrementally via CLI rather than all-at-once via Bicep when debugging deployment issues.</p>
+</div>
+
+<footer>Local-First Enterprise RAG — Lessons Learned</footer>
+</body>
+</html>

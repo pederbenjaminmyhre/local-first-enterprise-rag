@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Executive Summary — Local-First Enterprise RAG</title>
+<style>
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: #1e293b; background: #fff; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.8; }
+  h1 { font-size: 1.75rem; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: .5rem; }
+  h2 { font-size: 1.15rem; color: #334155; margin-top: 1.5rem; }
+  p { margin-bottom: 1rem; }
+  .highlight { background: #f0f9ff; border-left: 4px solid #38bdf8; padding: .75rem 1rem; border-radius: 0 .5rem .5rem 0; margin: 1.25rem 0; }
+  .metric { display: inline-block; background: #0f172a; color: #38bdf8; padding: .3rem .75rem; border-radius: .4rem; font-weight: 700; font-size: .9rem; margin-right: .5rem; }
+  ul { margin: .5rem 0 1rem 1.5rem; }
+  li { margin-bottom: .35rem; }
+  footer { margin-top: 2rem; font-size: .8rem; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: .75rem; }
+</style>
+</head>
+<body>
+
+<h1>Executive Summary</h1>
+
+<p>Enterprise adoption of AI-powered search and question-answering is accelerating, yet two persistent barriers block regulated industries from deploying these systems: <strong>data privacy</strong> and <strong>recurring cost</strong>. Organizations in Finance, Healthcare, and Defense cannot send proprietary data to third-party AI providers, and the per-token pricing of cloud LLM APIs creates unpredictable, escalating operational expenses.</p>
+
+<div class="highlight">
+  <strong>This project solves both problems simultaneously.</strong> It delivers a production-ready Retrieval-Augmented Generation (RAG) system that operates entirely within the organization's security perimeter while eliminating external AI token costs.
+</div>
+
+<h2>The Business Problem</h2>
+<p>Traditional AI search solutions require organizations to transmit sensitive product, customer, or operational data to external APIs (OpenAI, Azure AI, etc.). This creates three risks:</p>
+<ul>
+  <li><strong>Compliance exposure</strong> — regulated data leaves the firewall, violating SOC 2, HIPAA, or ITAR requirements</li>
+  <li><strong>Cost unpredictability</strong> — per-token billing scales linearly with usage, often reaching $5,000–$20,000/month for enterprise workloads</li>
+  <li><strong>Vendor lock-in</strong> — switching AI providers requires re-architecting the entire search pipeline</li>
+</ul>
+
+<h2>The Solution</h2>
+<p>Local-First Enterprise RAG combines three technologies into a single, self-contained system:</p>
+<ul>
+  <li><strong>SQL Server 2025 native vector search</strong> — stores embeddings alongside relational data in the same governed database, eliminating the need for a separate vector database</li>
+  <li><strong>Ollama local LLM</strong> — runs AI models on-premise with zero data leaving the network</li>
+  <li><strong>.NET 9 / WPF desktop application</strong> — provides a polished user interface for natural-language product search</li>
+</ul>
+
+<h2>Business Value Delivered</h2>
+<p>
+  <span class="metric">100% Air-Gapped</span>
+  <span class="metric">$0 Token Cost</span>
+  <span class="metric">~$10/mo Azure</span>
+</p>
+<ul>
+  <li><strong>Data sovereignty</strong> — all data, models, and inference remain inside the organization's firewall</li>
+  <li><strong>Zero recurring AI costs</strong> — local LLM inference replaces per-token API billing entirely</li>
+  <li><strong>Hybrid portability</strong> — the same codebase runs on a developer laptop or scales to Azure with no code changes</li>
+  <li><strong>Reduced infrastructure</strong> — SQL Server 2025's built-in vector search eliminates Pinecone, Weaviate, or other dedicated vector database subscriptions</li>
+  <li><strong>Future-proof</strong> — built on the Microsoft data platform roadmap (SQL Server 2025 + .NET 9 + Azure), ensuring long-term vendor support</li>
+</ul>
+
+<h2>Who This Serves</h2>
+<p>This system is designed for organizations that need AI-powered search but operate under strict data governance: financial services firms querying internal product catalogs, healthcare providers searching clinical documentation, and defense contractors working within classified networks. The architecture proves that enterprise AI does not require sacrificing security or budget.</p>
+
+<footer>Local-First Enterprise RAG — Executive Summary</footer>
+</body>
+</html>
